@@ -1,0 +1,5 @@
+Using Flat Assembler...
+
+Build both the BOOT.ASM and KERNEL.ASM which will create binaries (BOOT.BIN/KERNEL.BIN)
+Then assemble the BUILD.ASM to create the disk image (BUILD.IMG)
+The image can be loaded directly into Bochs as a floppy image or use VirtualBox (VBoxManage) to create a .vdi from the image file

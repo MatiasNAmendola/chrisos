@@ -84,6 +84,7 @@ start:
 
 .msg db 'Booted OK (Press Return)',0dh,0ah,'>',0
 ; Reserves 20h bytes of memory starting at address of label 'input'
+; Using selector:offset can store user input here using es
 .input rb 20h
 
 
@@ -131,8 +132,9 @@ start:
 	hlt
 
 .msg db 'chrisOS V0.05',0dh,0ah,'>',0
-.input rb 20h ;1 byte long
+.input rb 20h
 
+; Future error handling
 error: 
 	mov	si,.msg 
 	mov	ah,01h 
@@ -203,7 +205,7 @@ print_string:
 
 
 
-; Clears the screen, no args or returns 
+; Clears the screen and returns to user input loop
 clear_screen: 
 	push	ax di es dx 
 	
@@ -250,6 +252,9 @@ get_string:
 		je	.ret ; Jump to .ret if AL = 10
 		cmp	al,0dh ; AL = 13 (dec)
 		je	.ret ; Jump to .ret if AL = 13
+		
+		; Checks whether Al contains certain ASCII chars
+		; Needs to be changed to check after user enters return key
 		
 		; Check for 'q' key
 		cmp	al,71h

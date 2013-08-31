@@ -39,7 +39,7 @@ start:
 	mov	gs,ax
 	
 	mov	ax,0fffh
-	mov	ss,ax
+	mov	ss,ax ;Segment where stack is located in memory
 	mov	sp,0ffffh 
 	mov	bp,sp 
 	; Enable interrupts

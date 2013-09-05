@@ -156,11 +156,11 @@ interrupt:
 	cmp	ah,04h 
 	je	wait_enter 
 	cmp	ah,05h 
-	jmp	error
+	je	error
 	cmp	ah,06h
-	jmp	helpmsg
+	je	helpmsg
 	cmp	ah,07h
-	jmp	protected
+	je	protected
 
 shutdown_os: 
 	cli

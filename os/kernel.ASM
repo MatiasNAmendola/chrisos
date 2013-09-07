@@ -6,14 +6,14 @@ org 1000h
 
 
 ;==============================
-; chrisos kernel version 0.05
+; chrisos kernel version 0.06
 ;==============================
 
 
 ; Task States
-FREE_T equ (0)
-WAIT_T equ (1)
-IDLE_T equ (2)
+NULL_T equ (0)
+FREE_T equ (1)
+WAIT_T equ (2)
 EXEC_T equ (3)
 
 ; Task Memory
@@ -48,12 +48,25 @@ start:
 	; Address of a routine (interrupt memory location) to be called when the CPU receives an interrupt
 	mov	dword [320],0000+interrupt
 	mov	[boot_drive],dl
-	; Open free task slot
-	mov [TASK_T+bx], FREE_T
-
+	
 	; Set video mode 3 (text) 80 x 25
 	mov	ax,0003h
 	int	10h
+	
+	push bx
+	xor	bx,bx
+
+; Open free task slots	
+open_task_slots:
+	mov [TASK_T+bx], FREE_T
+	; Debug to notify added
+	mov	si,added
+	mov	ah,01h
+	int	50h
+	add bx, 2
+	cmp bx, TOTAL_T
+	jnz open_task_slots
+	pop bx
 
 	; +++Commandline Handling Routine+++
 	
@@ -363,31 +376,46 @@ task_man:
 	push ax bx
 	xor ax, ax
 	xor bx, bx
+	
+create_task:
 	; Check if free task slot available
 	mov ax, [TASK_T+bx]
 	cmp ax, FREE_T
-	jz found_free
+	je found_free
 	
 	; Cannot find free task slot
 	mov si, notfound
 	mov	ah,01h
 	int	50h
-	pop ax bx
-	jmp next
-	iret
-	
-	found_free:
+	; Put crlf into source index
+	mov	si,line
+	mov	ah,01h
+	int	50h
+	jmp check_next
+
+found_free:
 	mov si, found
 	mov	ah,01h
 	int	50h
+	; Put crlf into source index
+	mov	si,line
+	mov	ah,01h
+	int	50h
+	
+check_next:
+	; Check next slot
+	xor ax, ax
+	add bx, 2
+	cmp bx, TOTAL_T
+	jne create_task
 	pop ax bx
 	jmp next
-	iret
 
 boot_drive db 0 
 line db crlf,0	
+added db 'Made slot free', 0 
 found db 'Found free slot', 0   
-notfound db 'No available task slots', 0 
+notfound db 'Slot not free', 0 
 
 protected:
 	; Clear interrupts

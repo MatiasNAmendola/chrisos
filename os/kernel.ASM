@@ -9,6 +9,19 @@ org 1000h
 ; chrisos kernel version 0.05
 ;==============================
 
+
+; Task States
+FREE_T equ (0)
+WAIT_T equ (1)
+IDLE_T equ (2)
+EXEC_T equ (3)
+
+; Task Memory
+TOTAL_T equ (8)
+STACK_T equ (128)
+TASK_T rw TOTAL_T
+
+
 ; Carriage Return
 crlf	equ	0dh,0ah
 
@@ -35,6 +48,8 @@ start:
 	; Address of a routine (interrupt memory location) to be called when the CPU receives an interrupt
 	mov	dword [320],0000+interrupt
 	mov	[boot_drive],dl
+	; Open free task slot
+	mov [TASK_T+bx], FREE_T
 
 	; Set video mode 3 (text) 80 x 25
 	mov	ax,0003h
@@ -160,6 +175,8 @@ interrupt:
 	cmp	ah,06h
 	je	helpmsg
 	cmp	ah,07h
+	je	task_man
+	cmp	ah,08h
 	je	protected
 
 shutdown_os: 
@@ -271,6 +288,11 @@ get_string:
 		; If found display help
 		je    helpmsg
 		
+		; Check for 't' key
+		cmp	al,74h
+		; if found start task manager
+		je    task_man
+		
 		; Check for 'p' key
 		cmp	al,70h
 		; If found jump to protected mode
@@ -302,6 +324,7 @@ get_string:
 		.ret:
 		mov	al,0
 		; STOSB stores the byte in AL at [ES:DI]
+		; Signals end of string to be printed
 		stosb
 
 		; Pop AX from the stack
@@ -334,9 +357,37 @@ helpmsg:
 	iret
 
 help db 'ChrisOS Help: q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
+	
+; Task slot manager
+task_man:
+	push ax bx
+	xor ax, ax
+	xor bx, bx
+	; Check if free task slot available
+	mov ax, [TASK_T+bx]
+	cmp ax, FREE_T
+	jz found_free
+	
+	; Cannot find free task slot
+	mov si, notfound
+	mov	ah,01h
+	int	50h
+	pop ax bx
+	jmp next
+	iret
+	
+	found_free:
+	mov si, found
+	mov	ah,01h
+	int	50h
+	pop ax bx
+	jmp next
+	iret
 
 boot_drive db 0 
-line db crlf,0	   
+line db crlf,0	
+found db 'Found free slot', 0   
+notfound db 'No available task slots', 0 
 
 protected:
 	; Clear interrupts

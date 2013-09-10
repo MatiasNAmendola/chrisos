@@ -1,7 +1,7 @@
 chrisos
 =======
 
-An operating system focusing on simplicity and learning.
+An hobby operating system focusing on simplicity and learning. Full of comments to help new programmers get involved in learning about assembly.
 
 Assemble using Flat Assembler, tested on Bochs.
 

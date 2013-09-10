@@ -45,7 +45,7 @@ start:
 	int	10h
 
 	; dword 32-bit integer
-	; Address of a routine (interrupt memory location) to be called when the CPU receives an interrupt
+	; Move our custom interrupt routine into IVT
 	mov	dword [320],0000+interrupt
 	mov	[boot_drive],dl
 	
@@ -172,7 +172,7 @@ error:
 .msg db 'Error',0
 
 interrupt: 
-; Our interrupt handler will be invoked any time a scan code is sent to the keyboard controller
+; Our interrupt handler routine, loaded into memory at IVT location 320 (int 50h)
 	or	ah,ah 
 	jz	shutdown_os 
 	cmp	ah,01h 
@@ -301,6 +301,11 @@ get_string:
 		; If found display help
 		je    helpmsg
 		
+		; Check for 'm' key
+		cmp	al,6dh
+		; Print memory total
+		je    checkmem
+		
 		; Check for 't' key
 		cmp	al,74h
 		; if found start task manager
@@ -359,7 +364,8 @@ wait_enter:
 		.ret: 
 		pop	ax 
 		iret
-
+		
+; Display help message
 helpmsg:
 	push ax
 	mov	si,help
@@ -368,6 +374,41 @@ helpmsg:
 	pop	ax
 	jmp next
 	iret
+	
+; Checks available memory
+checkmem:
+	push ax
+	int 12h
+	Call printregister
+	pop ax
+	iret
+
+; Print contents of the AX register
+printregister:
+	pusha
+	push 0
+	mov bx, 10
+		@@:
+		xor dx, dx
+		div bx
+		add dx, '0'
+		push dx
+		or al,al
+		jz @f
+		jmp @b
+		
+		@@:
+		pop ax
+		or al, al
+		jz @f
+		mov ah, 0Eh
+		int 10h
+		jmp @b
+	
+		@@:
+		popa
+		jmp next
+		iret
 
 help db 'ChrisOS Help: q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
 	

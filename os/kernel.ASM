@@ -410,7 +410,7 @@ printregister:
 		jmp next
 		iret
 
-help db 'ChrisOS Help: q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
+help db 'ChrisOS Help: t - start task manager, m - show free memory, q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
 	
 ; Task slot manager
 task_man:

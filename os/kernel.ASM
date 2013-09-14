@@ -316,6 +316,16 @@ get_string:
 		; If found jump to protected mode
 		je    protected
 		
+		; Check for 's' key
+		cmp	al,73h
+		; Set first task slot to wait
+		je    close_task_slot
+		
+		; Check for 'o' key
+		cmp	al,6fh
+		; Set first task slot to idle
+		je    open_task_slot
+		
 		; Set Teletype output
 		mov	ah,0eh
 		; Teletype output, AL = character, BH = page number
@@ -410,8 +420,57 @@ printregister:
 		jmp next
 		iret
 
-help db 'ChrisOS Help: t - start task manager, m - show free memory, q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
+help db 'ChrisOS Help: task manager (t - show slot status, s - close slot, o - make slot free), m - show free memory, q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
+
+; Puts first FREE task slot in WAIT state
+close_task_slot:
+	push ax bx
+	xor ax, ax
+	xor bx, bx
+	startcheck:
+	mov ax, [TASK_T+bx]
+	cmp ax, WAIT_T
+	je incnext
+	mov [TASK_T+bx], WAIT_T
+	mov	si,taskwait
+	mov	ah,01h
+	int	50h
+	pop ax bx
+	jmp next
 	
+	incnext:
+	add bx, 2
+	xor ax, ax
+	cmp bx, TOTAL_T
+	jnz startcheck
+	pop ax bx
+	jmp next
+
+; Attempts to free up task slot, by adding FREE state
+open_task_slot:
+	push ax bx
+	xor ax, ax
+	xor bx, bx
+	@@:
+	mov ax, [TASK_T+bx]
+	cmp ax, WAIT_T
+	je open
+	xor ax, ax
+	add bx, 2
+	cmp bx, TOTAL_T
+	jnz @b
+	pop ax bx
+	jmp next
+	
+	open:
+	mov [TASK_T+bx], FREE_T
+	mov	si,added
+	mov	ah,01h
+	int	50h
+	pop ax bx
+	jmp next
+		
+
 ; Task slot manager
 task_man:
 	push ax bx
@@ -454,9 +513,10 @@ check_next:
 
 boot_drive db 0 
 line db crlf,0	
+taskwait db 'Set slot to WAIT', 0 
 added db 'Made slot free', 0 
 found db 'Found free slot', 0   
-notfound db 'Slot not free', 0 
+notfound db 'Slot not free', 0
 
 protected:
 	; Clear interrupts
@@ -473,7 +533,7 @@ protected:
 	or    al,0x1  
 	mov   cr0,eax 
   
-	jmp   0x10:intop
+	jmp   0x80:intop
 
 ;***************************
 ; 32-bit Kernel Entry Point

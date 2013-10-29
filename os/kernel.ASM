@@ -511,12 +511,39 @@ check_next:
 	pop ax bx
 	jmp next
 
+; Prints current task id state
+; This will be in the main loop eventually
+	push es
+	mov ax, 0h ; Es starts
+	mov es, ax
+	xor di, di
+	mov si, TASK_T
+	
+	printstate:
+		lodsw
+		mov ah, 15
+		add al, '0'
+		stosw
+		cmp si, TASK_T+TOTAL_T*2
+		jnz printstate
+		mov di, [tid]
+		inc di
+		mov al, 12
+		stosb
+		pop es
+
 boot_drive db 0 
 line db crlf,0	
 taskwait db 'Set slot to WAIT', 0 
 added db 'Made slot free', 0 
 found db 'Found free slot', 0   
 notfound db 'Slot not free', 0
+
+; Kernel lock state
+klock rw 1
+; Current task id
+tid rw 1
+
 
 protected:
 	; Clear interrupts

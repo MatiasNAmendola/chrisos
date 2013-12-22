@@ -159,7 +159,7 @@ open_task_slots:
 	cli
 	hlt
 
-.msg db 'chrisOS V0.05',0dh,0ah,'>',0
+.msg db 'chrisOS V0.07',0dh,0ah,'>',0
 .input rb 20h
 
 ; Future error handling

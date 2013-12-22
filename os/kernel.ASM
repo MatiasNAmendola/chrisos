@@ -6,7 +6,7 @@ org 1000h
 
 
 ;==============================
-; chrisos kernel version 0.06
+; chrisos kernel version 0.07
 ;==============================
 
 
@@ -560,7 +560,7 @@ protected:
 	or    al,0x1  
 	mov   cr0,eax 
   
-	jmp   0x80:intop
+	jmp   0x10:intop
 
 ;***************************
 ; 32-bit Kernel Entry Point
@@ -571,17 +571,19 @@ intop:
 	mov   ds,ax
 	mov   es,ax
 	mov   ss,ax
+	mov	  fs,ax
+	mov   gs,ax
 
 	; Print welcome message
 	mov	esi,welcome
 	mov	ecx,welcome_size
-	call chatacter_print
+	call character_print
 
 MainLoop:
 	hlt
 	jmp	MainLoop
 
-chatacter_print:
+character_print:
 	; Global text printer
 	pusha
 
@@ -600,7 +602,7 @@ chatacter_print:
 	; Set screen colours
 	mov	ah,0x0F
 
-		.chatacter_printLoop:
+		.character_printLoop:
 		; Print each character
 		lodsb 
 		cmp	al,10
@@ -617,7 +619,7 @@ chatacter_print:
 
 		.nextChar: 
 		; Loop through buffer
-		loop	.chatacter_printLoop
+		loop	.character_printLoop
 
 		mov	al,0x0E 
 		mov	ah,bh 

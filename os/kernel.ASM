@@ -326,6 +326,11 @@ get_string:
 		; Set first task slot to idle
 		je    open_task_slot
 		
+		; Check for '1' key
+		cmp	al,31h
+		; Check task 1 status
+		je    check_task
+		
 		; Set Teletype output
 		mov	ah,0eh
 		; Teletype output, AL = character, BH = page number
@@ -384,6 +389,16 @@ helpmsg:
 	pop	ax
 	jmp next
 	iret
+
+; Checks current task value
+check_task:
+	push ax
+	;mov ah, 88h
+	;int 15h
+	mov ax, [TASK_T+0]
+	Call printregister
+	pop ax
+	iret
 	
 ; Checks available memory above first mb
 checkmem:
@@ -421,7 +436,7 @@ printregister:
 		jmp next
 		iret
 
-help db 'ChrisOS Help: task manager (t - show slot status, s - close slot, o - make slot free), m - show free memory, q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
+help db 'ChrisOS Help: task manager (<number> - task slot value, t - show slot status, s - close slot, o - make slot free), m - show free memory, q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
 
 ; Puts first FREE task slot in WAIT state
 close_task_slot:
@@ -471,6 +486,31 @@ open_task_slot:
 	pop ax bx
 	jmp next
 		
+; Attempts to set task slot to EXEC, locks kernel
+lock_task_slot:
+	push ax bx
+	xor ax, ax
+	xor bx, bx
+	@@:
+	mov ax, [TASK_T+bx]
+	cmp ax, WAIT_T
+	je lockt
+	xor ax, ax
+	add bx, 2
+	cmp bx, TOTAL_T
+	jnz @b
+	pop ax bx
+	jmp next
+	
+	lockt:
+	mov [TASK_T+bx], EXEC_T
+	mov [klock], 1
+	mov	si,added
+	mov	ah,01h
+	int	50h
+	pop ax bx
+	jmp next
+
 
 ; Task slot manager
 task_man:

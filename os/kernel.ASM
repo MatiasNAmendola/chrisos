@@ -393,8 +393,6 @@ helpmsg:
 ; Checks current task value
 check_task:
 	push ax
-	;mov ah, 88h
-	;int 15h
 	mov ax, [TASK_T+0]
 	Call printregister
 	pop ax
@@ -402,6 +400,9 @@ check_task:
 	
 ; Checks available memory above first mb
 checkmem:
+	mov	si,memfound
+	mov	ah,01h
+	int	50h
 	push ax
 	mov ah, 88h
 	int 15h
@@ -579,6 +580,7 @@ taskwait db 'Set slot to WAIT', 0
 added db 'Made slot free', 0 
 found db 'Found free slot', 0   
 notfound db 'Slot not free', 0
+memfound db 'Available Memory (KB): ', 0
 
 ; Kernel lock state
 klock rw 1

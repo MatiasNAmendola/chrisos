@@ -1,13 +1,14 @@
 format	binary
 use16 
 
-;The origin address which FASM will assume the program begins at when it is loaded into memory
+; The origin address which FASM will assume the program begins at when it is loaded into memory
 org	7c00h 
 
+; Jump over disk info
 jmp	start 
 nop 
 
-;File System Info
+; File System Info, legacy BIOS parameter block (bpb)
 OEM:					db "CHRIS OS"
 bpbBytesPerSector:		dw 512 
 bpbSectorsPerCluster:	db 1 
@@ -25,7 +26,7 @@ bsDriveNumber:			db 0
 bsUnused:				db 0 
 bsExtBootSignature:		db 29h 
 bsSerialNumber: 		dd 0 
-bsVolumeLabel:			db "chrisOS       "
+bsVolumeLabel:			db "chrisOS    "
 bsFileSystem:			db "FAT12   " 
 
 start:
@@ -39,7 +40,7 @@ start:
 	mov	gs,ax
 	
 	mov	ax,0fffh
-	mov	ss,ax ;Segment where stack is located in memory
+	mov	ss,ax ; Segment where stack is located in memory
 	mov	sp,0ffffh 
 	mov	bp,sp 
 	; Enable interrupts
@@ -62,7 +63,7 @@ start:
 	mov	cl,2
 	mov	dh,0
 	
-	; Read 1 sector from drive into memory ES:BX
+	; Read AL number of sectors from drive into memory ES:BX
 	int	13h
 	jc	read_kernel
 	; Jump to location where kernel starts in memory

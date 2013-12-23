@@ -17,7 +17,7 @@ WAIT_T equ (2)
 EXEC_T equ (3)
 
 ; Task Memory
-TOTAL_T equ (8)
+TOTAL_T equ (10)
 STACK_T equ (128)
 TASK_T rw TOTAL_T
 
@@ -207,7 +207,7 @@ shutdown_os:
 	sti 
 
 	; jmp to nowhere land
-	jmp	2000h
+	jmp	3000h
 
 ; Prints a zero-terminated, ds:si pointed string 
 ; SI is the memory address of a data section in the kernel, DS is 00000. So DS:SI contains physical address
@@ -385,10 +385,11 @@ helpmsg:
 	jmp next
 	iret
 	
-; Checks available memory
+; Checks available memory above first mb
 checkmem:
 	push ax
-	int 12h
+	mov ah, 88h
+	int 15h
 	Call printregister
 	pop ax
 	iret
@@ -573,6 +574,10 @@ intop:
 	mov   ss,ax
 	mov	  fs,ax
 	mov   gs,ax
+
+	; Poll 0x60 port for keyboard input
+	; in	al, 0x60
+	; cmp	al, 70h
 
 	; Print welcome message
 	mov	esi,welcome

@@ -6,7 +6,7 @@ org 1000h
 
 
 ;==============================
-; chrisos kernel version 0.07
+; chrisos kernel version 0.10
 ;==============================
 
 
@@ -158,8 +158,43 @@ open_task_slots:
 	jmp next
 	cli
 	hlt
+	
+.msg db 'chrisOS V0.10',0dh,0ah,'>',0
+.input rb 20h
+	
+task_manager_loop:
 
-.msg db 'chrisOS V0.07',0dh,0ah,'>',0
+	; Put crlf into source index
+	mov	si,line
+	; Set print string
+	mov	ah,01h
+	int	50h
+
+	; Put msg into source index
+	mov	si,.msgtaskman
+	mov	ah,01h
+	int	50h
+
+	; Add input (register byte) as the di
+	mov	di,.input
+	mov	dx,19h 
+	mov	ah,09h
+	int	50h
+
+	; Put return keypress into source index
+	mov	si,line
+	mov	ah,01h
+	int	50h
+
+	;  Add input (register byte) as the si. input now contains what user inputted
+	mov	si,.input
+	mov	ah,01h
+	int	50h
+
+	
+	jmp task_manager_loop
+
+.msgtaskman db 'chrisOS V0.10: Task Manager',0dh,0ah,'>',0
 .input rb 20h
 
 ; Future error handling
@@ -191,6 +226,8 @@ interrupt:
 	je	task_man
 	cmp	ah,08h
 	je	protected
+	cmp	ah,09h
+	je	get_task_man_string
 
 shutdown_os: 
 	cli
@@ -309,12 +346,87 @@ get_string:
 		; Check for 't' key
 		cmp	al,74h
 		; if found start task manager
-		je    task_man
+		je    task_manager_loop
 		
 		; Check for 'p' key
 		cmp	al,70h
 		; If found jump to protected mode
 		je    protected
+		
+		; Set Teletype output
+		mov	ah,0eh
+		; Teletype output, AL = character, BH = page number
+		int	10h
+
+		.store: 
+		; Stores the byte in AL at [ES:DI]
+		stosb
+
+		; Decrement dx by 1
+		dec	dx
+		; Check if value in dx is 0
+		or	dx,dx
+		jz	.ret 
+
+		; Jump to first label
+		jmp	@b
+
+		.extended: 
+		; Shift 8 bits right
+		shr	ax,8
+		jmp	.store 
+
+		.ret:
+		mov	al,0
+		; STOSB stores the byte in AL at [ES:DI]
+		; Signals end of string to be printed
+		stosb
+
+		; Pop AX from the stack
+		pop	ax
+		iret
+
+
+; Handle task manager specific commands
+get_task_man_string: 
+	; Decrements the stack pointer and then stores AX on the top of the stack
+	push	ax
+	; Decrement DX by 1, initially set to 19h
+	dec	dx
+	;DS:SI points to register byte (input)
+	
+		@@: 
+		; Reads each keypress, outputs to screen and stores in ES:DI (input)
+		xor	ah,ah
+		; Read character from keyboard, AL = ASCII character
+		int	16h
+		; Check if value in AL is 0
+		or	al,al
+		; If AL is 0 jump to .extended
+		jz	.extended
+		; Return keypress handling
+		cmp	al,0ah ; AL = 10 (dec)
+		je	.ret ; Jump to .ret if AL = 10
+		cmp	al,0dh ; AL = 13 (dec)
+		je	.ret ; Jump to .ret if AL = 13
+		
+		; Checks whether Al contains certain ASCII chars
+		; Needs to be changed to check after user enters return key
+		
+		; Check for 'q' key
+		cmp	al,71h
+		; Go back to main loop
+		je	 next
+		
+		; Check for 'h' key
+		cmp	al,68h
+		; If found display help
+		je    helpmsgtask
+		
+		; Check for 't' key
+		cmp	al,74h
+		; if found get task status
+		je    task_man
 		
 		; Check for 's' key
 		cmp	al,73h
@@ -389,6 +501,16 @@ helpmsg:
 	pop	ax
 	jmp next
 	iret
+	
+; Display help message
+helpmsgtask:
+	push ax
+	mov	si,helptask
+	mov	ah,01h 
+	int	50h
+	pop	ax
+	jmp task_manager_loop
+	iret
 
 ; Checks current task value
 check_task:
@@ -437,7 +559,8 @@ printregister:
 		jmp next
 		iret
 
-help db 'ChrisOS Help: task manager (<number> - task slot value, t - show slot status, s - close slot, o - make slot free), m - show free memory, q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
+help db 'ChrisOS Main Help: t - open task manager, m - show free memory, q - halt, c - clear screen, h - help, p - enter 32-bit land', 0
+helptask db 'ChrisOS Task Manager Help: <number> - show task slot value, t - show slot status, s - close slot, o - make slot free, q - quit task manager', 0
 
 ; Puts first FREE task slot in WAIT state
 close_task_slot:
@@ -453,7 +576,7 @@ close_task_slot:
 	mov	ah,01h
 	int	50h
 	pop ax bx
-	jmp next
+	jmp task_manager_loop
 	
 	incnext:
 	add bx, 2
@@ -461,7 +584,7 @@ close_task_slot:
 	cmp bx, TOTAL_T
 	jnz startcheck
 	pop ax bx
-	jmp next
+	jmp task_manager_loop
 
 ; Attempts to free up task slot, by adding FREE state
 open_task_slot:
@@ -477,7 +600,7 @@ open_task_slot:
 	cmp bx, TOTAL_T
 	jnz @b
 	pop ax bx
-	jmp next
+	jmp task_manager_loop
 	
 	open:
 	mov [TASK_T+bx], FREE_T
@@ -485,7 +608,7 @@ open_task_slot:
 	mov	ah,01h
 	int	50h
 	pop ax bx
-	jmp next
+	jmp task_manager_loop
 		
 ; Attempts to set task slot to EXEC, locks kernel
 lock_task_slot:
@@ -501,7 +624,7 @@ lock_task_slot:
 	cmp bx, TOTAL_T
 	jnz @b
 	pop ax bx
-	jmp next
+	jmp task_manager_loop
 	
 	lockt:
 	mov [TASK_T+bx], EXEC_T
@@ -510,7 +633,7 @@ lock_task_slot:
 	mov	ah,01h
 	int	50h
 	pop ax bx
-	jmp next
+	jmp task_manager_loop
 
 
 ; Task slot manager
@@ -551,7 +674,7 @@ check_next:
 	cmp bx, TOTAL_T
 	jne create_task
 	pop ax bx
-	jmp next
+	jmp task_manager_loop
 
 ; Prints current task id state
 ; This will be in the main loop eventually
@@ -627,6 +750,7 @@ intop:
 	call character_print
 
 MainLoop:
+	; TODO - Load next part of kernel to resume 32-bit journey
 	hlt
 	jmp	MainLoop
 

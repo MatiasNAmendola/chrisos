@@ -11,3 +11,6 @@ Big thanks to the Flat Assembler community for their help and advice - The board
 
 
 Currently looking for contributors, come and join the fun.
+
+
+Not adding checksums to releases until version 1.0

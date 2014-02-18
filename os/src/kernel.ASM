@@ -5,9 +5,9 @@ org 1000h
 ; Kernel loaded into conventional memory
 
 
-;==============================
-; chrisos kernel version 0.10
-;==============================
+;===============
+; chrisos kernel
+;===============
 
 
 ; Task States

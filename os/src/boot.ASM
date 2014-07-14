@@ -58,7 +58,7 @@ start:
 	mov	bx,1000h 
 
 	mov	ah,2
-	mov	al,4
+	mov	al,6
 	mov	ch,0
 	mov	cl,2
 	mov	dh,0

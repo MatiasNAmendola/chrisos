@@ -763,9 +763,7 @@ intop:
 	call character_print
 
 MainLoop:
-	; TODO - Load next part of kernel to resume 32-bit journey
-	hlt
-	jmp	MainLoop
+	jmp	0x10:1800h
 
 character_print:
 	; Global text printer
@@ -831,4 +829,4 @@ gdtr:	    dw gdt_end - gdt - 1
 welcome db '32-bit mode enabled',0
 welcome_size = $ - welcome
 
-;times   300h - ($-$$)   nop ; Pad out to 768 bytes long
+times   800h - ($-$$)   nop ; Pad out to 2048 bytes long

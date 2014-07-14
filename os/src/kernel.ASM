@@ -39,8 +39,8 @@ macro	mov	p1,p2 {
 } 
 
 start:
-	mov	ax,0e43h
-	xor	bx,bx
+	mov	ax, 0e43h
+	xor	bx, bx
 	; Get cursor position and shape, return dl with column, ax = 0
 	int	10h
 
@@ -60,10 +60,10 @@ start:
 open_task_slots:
 	mov [TASK_T+bx], FREE_T
 	; Debug to notify added
-	mov	si,added
-	mov	ah,01h
-	int	50h
-	add bx, 2
+	mov si, freed
+	mov ah, 01h
+	int 50h
+	add bx, 2 
 	cmp bx, TOTAL_T
 	jnz open_task_slots
 	pop bx
@@ -71,18 +71,18 @@ open_task_slots:
 	; +++Commandline Handling Routine+++
 	
 	; Put crlf into source index
-	mov	si,line
+	mov si, line
 	; Set print string
-	mov	ah,01h
+	mov ah, 01h
 	; Call print_string (recursively puts contents of ds:si (newline) into AL and prints each character)
-	int	50h
+	int 50h
 
 	; Put msg into source index
-	mov	si,.msg
+	mov si,.msg
 	; Set print string
-	mov	ah,01h
+	mov ah,01h
 	; Call to print_string (recursively puts contents of ds:si into AL and prints each chatacter)
-	int	50h
+	int 50h
 
 	; Add input (register byte) as the di
 	mov	di,.input
@@ -116,7 +116,7 @@ open_task_slots:
 .input rb 20h
 
 
- next:
+next:
 
 	; Put crlf into source index
 	mov	si,line
@@ -440,8 +440,8 @@ get_task_man_string:
 		
 		; Check for '1' key
 		cmp	al,31h
-		; Check task 1 status
-		je    check_task
+		; Execute task number 1
+		je    lock_task_slot
 		
 		; Set Teletype output
 		mov	ah,0eh
@@ -515,7 +515,7 @@ helpmsgtask:
 ; Checks current task value
 check_task:
 	push ax
-	mov ax, [TASK_T+0]
+	mov ax, [TASK_T]
 	Call printregister
 	pop ax
 	iret
@@ -604,7 +604,7 @@ open_task_slot:
 	
 	open:
 	mov [TASK_T+bx], FREE_T
-	mov	si,added
+	mov	si,freed
 	mov	ah,01h
 	int	50h
 	pop ax bx
@@ -644,29 +644,31 @@ task_man:
 	
 create_task:
 	; Check if free task slot available
+	cmp [klock], 1
+	je kernel_locked
 	mov ax, [TASK_T+bx]
 	cmp ax, FREE_T
 	je found_free
 	
 	; Cannot find free task slot
 	mov si, notfound
-	mov	ah,01h
-	int	50h
+	mov ah, 01h
+	int 50h
 	; Put crlf into source index
-	mov	si,line
-	mov	ah,01h
-	int	50h
+	mov si, line
+	mov ah, 01h
+	int 50h
 	jmp check_next
 
 found_free:
 	mov si, found
-	mov	ah,01h
-	int	50h
+	mov ah, 01h
+	int 50h
 	; Put crlf into source index
-	mov	si,line
-	mov	ah,01h
-	int	50h
-	
+	mov si, line
+	mov ah, 01h
+	int 50h
+
 check_next:
 	; Check next slot
 	xor ax, ax
@@ -697,11 +699,22 @@ check_next:
 		stosb
 		pop es
 
-boot_drive db 0 
-line db crlf,0	
-taskwait db 'Set slot to WAIT', 0 
-added db 'Made slot free', 0 
-found db 'Found free slot', 0   
+kernel_locked:
+	mov si, locked
+	mov ah, 01h
+	int 50h
+	mov si, line
+	mov ah, 01h
+	int 50h
+	jmp next 
+
+boot_drive db 0
+line db crlf,0
+taskwait db 'Set slot to WAIT', 0
+freed db 'Made slot free', 0
+added db 'Slot set to execute, locking kernel', 0
+found db 'Found free slot', 0
+locked db 'Kernel locked, exiting task manager', 0
 notfound db 'Slot not free', 0
 memfound db 'Available Memory (KB): ', 0
 

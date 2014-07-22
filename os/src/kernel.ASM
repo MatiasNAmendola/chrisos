@@ -2,12 +2,12 @@ format	binary
 use16
 org 1000h
 
-; Kernel loaded into conventional memory
+; Loaded into conventional memory
 
 
-;===============
-; chrisos kernel
-;===============
+;=======================
+; chrisos 16-bit kernel
+;=======================
 
 
 ; Task States
@@ -23,7 +23,7 @@ TASK_T rw TOTAL_T
 
 
 ; Carriage Return
-crlf	equ	0dh,0ah
+crlf equ 0dh, 0ah
 
 ; Custom MOV instruction
 macro	mov	p1,p2 { 
@@ -39,22 +39,22 @@ macro	mov	p1,p2 {
 } 
 
 start:
-	mov	ax, 0e43h
-	xor	bx, bx
+	mov ax, 0e43h
+	xor bx, bx
 	; Get cursor position and shape, return dl with column, ax = 0
-	int	10h
+	int 10h
 
 	; dword 32-bit integer
 	; Move our custom interrupt routine into IVT
-	mov	dword [320],0000+interrupt
-	mov	[boot_drive],dl
+	mov dword [320],0000+interrupt
+	mov [boot_drive],dl
 	
 	; Set video mode 3 (text) 80 x 25
-	mov	ax,0003h
-	int	10h
+	mov ax, 0003h
+	int 10h
 	
 	push bx
-	xor	bx,bx
+	xor bx, bx
 
 ; Open free task slots	
 open_task_slots:
@@ -78,33 +78,33 @@ open_task_slots:
 	int 50h
 
 	; Put msg into source index
-	mov si,.msg
+	mov si, .msg
 	; Set print string
-	mov ah,01h
+	mov ah, 01h
 	; Call to print_string (recursively puts contents of ds:si into AL and prints each chatacter)
 	int 50h
 
 	; Add input (register byte) as the di
-	mov	di,.input
-	mov	dx,19h 
+	mov di, .input
+	mov dx, 19h 
 	; Set get string
-	mov	ah,03h
+	mov ah, 03h
 	;Call to get_string (es:di  0000:.input)
-	int	50h
+	int 50h
 
 	; Put return keypress into source index
-	mov	si,line
+	mov si, line
 	; Set print string
-	mov	ah,01h
+	mov ah, 01h
 	; Call to print_string (ds:si pointed string - prints blank line)
-	int	50h
+	int 50h
 
 	;  Add input (register byte) as the si. input now contains what user inputted
-	mov	si,.input
+	mov si, .input
 	; Set print string
-	mov	ah,01h
+	mov ah, 01h
 	; Call to print_string (ds:si 0000:.input pointed string- prints string inputted)
-	int	50h
+	int 50h
 
 
     jmp next ;Archaic loop
@@ -119,40 +119,40 @@ open_task_slots:
 next:
 
 	; Put crlf into source index
-	mov	si,line
+	mov si, line
 	; Set print string
-	mov	ah,01h
+	mov ah, 01h
 	; Call print_string (recursively puts contents of ds:si (newline) into AL and prints each character)
-	int	50h
+	int 50h
 
 	; Put msg into source index
-	mov	si,.msg
+	mov si, .msg
 	; Set print string
-	mov	ah,01h
+	mov ah, 01h
 	; Call to print_string (recursively puts contents of ds:si into AL and prints each chatacter)
-	int	50h
+	int 50h
 
 	; Add input (register byte) as the di
-	mov	di,.input
-	mov	dx,19h 
+	mov di, .input
+	mov dx, 19h 
 	; Set get string
-	mov	ah,03h
+	mov ah, 03h
 	;Call to get_string (es:di  0000:.input)
-	int	50h
+	int 50h
 
 	; Put return keypress into source index
-	mov	si,line
+	mov si, line
 	; Set print string
-	mov	ah,01h
+	mov ah, 01h
 	; Call to print_string (ds:si pointed string - prints blank line)
-	int	50h
+	int 50h
 
 	;  Add input (register byte) as the si. input now contains what user inputted
-	mov	si,.input
+	mov si, .input
 	; Set print string
-	mov	ah,01h
+	mov ah, 01h
 	; Call to print_string (ds:si 0000:.input pointed string- prints string inputted)
-	int	50h
+	int 50h
 
 	
 	jmp next
@@ -165,31 +165,31 @@ next:
 task_manager_loop:
 
 	; Put crlf into source index
-	mov	si,line
+	mov si, line
 	; Set print string
-	mov	ah,01h
-	int	50h
+	mov ah, 01h
+	int 50h
 
 	; Put msg into source index
-	mov	si,.msgtaskman
-	mov	ah,01h
-	int	50h
+	mov si, .msgtaskman
+	mov ah, 01h
+	int 50h
 
 	; Add input (register byte) as the di
-	mov	di,.input
-	mov	dx,19h 
-	mov	ah,09h
-	int	50h
+	mov di, .input
+	mov dx,19h 
+	mov ah, 09h
+	int 50h
 
 	; Put return keypress into source index
-	mov	si,line
-	mov	ah,01h
-	int	50h
+	mov si, line
+	mov ah, 01h
+	int 50h
 
 	;  Add input (register byte) as the si. input now contains what user inputted
-	mov	si,.input
-	mov	ah,01h
-	int	50h
+	mov si, .input
+	mov ah, 01h
+	int 50h
 
 	
 	jmp task_manager_loop
@@ -199,35 +199,35 @@ task_manager_loop:
 
 ; Future error handling
 error: 
-	mov	si,.msg 
-	mov	ah,01h 
-	int	50h 
+	mov si, .msg 
+	mov ah, 01h 
+	int 50h 
 	cli 
 	hlt 
 .msg db 'Error',0
 
 interrupt: 
 ; Our interrupt handler routine, loaded into memory at IVT location 320 (int 50h)
-	or	ah,ah 
-	jz	shutdown_os 
-	cmp	ah,01h 
-	je	print_string 
-	cmp	ah,02h 
-	je	clear_screen 
-	cmp	ah,03h 
-	je	get_string 
-	cmp	ah,04h 
-	je	wait_enter 
-	cmp	ah,05h 
-	je	error
-	cmp	ah,06h
-	je	helpmsg
-	cmp	ah,07h
-	je	task_man
-	cmp	ah,08h
-	je	protected
-	cmp	ah,09h
-	je	get_task_man_string
+	or ah, ah 
+	jz shutdown_os 
+	cmp ah, 01h 
+	je print_string 
+	cmp ah, 02h 
+	je clear_screen 
+	cmp ah, 03h 
+	je get_string 
+	cmp ah, 04h 
+	je wait_enter 
+	cmp ah, 05h 
+	je error
+	cmp ah, 06h
+	je helpmsg
+	cmp ah, 07h
+	je task_man
+	cmp ah, 08h
+	je protected
+	cmp ah, 09h
+	je get_task_man_string
 
 shutdown_os: 
 	cli
@@ -739,7 +739,7 @@ protected:
 	or    al,0x1  
 	mov   cr0,eax 
   
-	jmp   0x10:intop
+	jmp   CODE_SELECTOR:intop
 
 ;***************************
 ; 32-bit Kernel Entry Point
@@ -750,7 +750,7 @@ intop:
 	mov   ds,ax
 	mov   es,ax
 	mov   ss,ax
-	mov	  fs,ax
+	mov   fs,ax
 	mov   gs,ax
 
 	; Poll 0x60 port for keyboard input
@@ -813,6 +813,11 @@ character_print:
 
 		popa 
 		ret
+
+NULL_SELECTOR = 0
+DATA_SELECTOR = 1 shl 3
+CODE_SELECTOR = 2 shl 3
+LONG_SELECTOR = 3 shl 3
 
 ;*******
 ; GDT

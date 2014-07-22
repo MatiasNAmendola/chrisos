@@ -3,13 +3,25 @@ use32
 
 org 1800h
 
+; Main chrisos 32-bit kernel
+
 start:
-	mov esi, welcome
-	mov ecx, welcome_size
+	mov esi,welcome
+	mov ecx,welcome_size
 	call character_print
+	
+	; Initialise a chunk of memory
+	mov eax, dword [1]
+	mov [0x180000], eax 
+	mov eax, [0x180000]
+	cmp eax, dword [1]
+	jne start ; Check it worked
 
 MainLoop:
-	hlt
+	; Temp check if we got here
+	mov esi, welcome 
+	call character_print
+	jmp $	
 
 character_print:
 	; Global text printer
@@ -60,17 +72,30 @@ character_print:
 		popa 
 		ret
 
-;*******
-; GDT
-;*******
-
-gdt:	    dw	  0x0000, 0x0000, 0x0000, 0x0000 
-sys_data:   dw	  0xFFFF, 0x0000, 0x9200, 0x00CF 
-sys_code:   dw	  0xFFFF, 0x0000, 0x9a00, 0x00CF 
-gdt_end: 
-
-gdtr:	    dw gdt_end - gdt - 1					   
-			dd gdt
-
-welcome db 'Loaded main 32-bit kernel',0
+welcome db 'Into main kernel',0
 welcome_size = $ - welcome
+
+MBH_MAGIC equ 0x1BADB002
+MBH_FLAGS equ 0x100000
+
+org 0x100000
+
+load_addr:
+header_addr:
+dd MBH_MAGIC
+dd MBH_FLAGS
+dd -MBH_MAGIC-MBH_FLAGS
+dd header_addr
+dd load_addr
+dd load_end_addr
+dd bss_end_addr
+dd entry_addr
+
+entry_addr:
+	hlt
+
+load_end_addr:
+; align 4
+; rb STACK_SIZE
+bss_end_addr:
+
